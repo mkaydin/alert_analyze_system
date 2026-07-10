@@ -92,27 +92,18 @@ async def list_documents():
     try:
         col = chroma.get_collection("documents")
         res = col.get()
-        docs = []
-        seen = set()
-        if res["ids"]:
-            for i, _ in enumerate(res["ids"]):
-                meta = res["metadatas"][i] if res["metadatas"] else {}
-                key = (meta.get("title", ""), meta.get("source", ""))
-                if key not in seen:
-                    seen.add(key)
-                    docs.append(
-                        {
-                            "title": meta.get("title", ""),
-                            "source": meta.get("source", ""),
-                            "chunks": sum(
-                                1
-                                for m in (res["metadatas"] or [])
-                                if m.get("title") == meta.get("title")
-                            ),
-                        }
-                    )
-        all_docs = list(seen)
-        return {"documents": [{"title": t, "source": s} for t, s in seen]}
+        docs: dict[tuple[str, str], dict] = {}
+        for meta in res["metadatas"] or []:
+            key = (meta.get("title", ""), meta.get("source", ""))
+            if key not in docs:
+                docs[key] = {
+                    "title": key[0],
+                    "source": key[1],
+                    "chunks": 0,
+                }
+            docs[key]["chunks"] += 1
+        documents = list(docs.values())
+        return {"documents": documents, "total": len(documents)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

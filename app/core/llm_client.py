@@ -35,6 +35,15 @@ class OllamaLLMClient:
             data = resp.json()
         return data["response"]
 
+    def stats(self) -> dict:
+        available = self.semaphore._value
+        waiters = self.semaphore._waiters
+        return {
+            "active": settings.ollama_concurrency - available,
+            "max": settings.ollama_concurrency,
+            "queue": len(waiters) if waiters else 0,
+        }
+
     async def close(self):
         if self._client:
             await self._client.aclose()

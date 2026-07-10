@@ -20,7 +20,7 @@ class Alert(BaseModel):
     detection_source: str
     product_name: str = ""
     service_source: str = ""
-    created_datetime: datetime
+    created_datetime: datetime | None = None
     first_activity_datetime: datetime | None = None
     last_activity_datetime: datetime | None = None
     mitre_techniques: list[str] = []

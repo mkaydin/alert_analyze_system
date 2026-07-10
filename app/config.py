@@ -11,7 +11,14 @@ class Settings(BaseSettings):
     llm_max_tokens: int = 2048
 
     chromadb_path: str = "data/chromadb"
-    chromadb_collections: list[str] = ["alerts", "evidence", "rules", "flags", "documents"]
+    chromadb_collections: list[str] = [
+        "alerts",
+        "evidence",
+        "rules",
+        "flags",
+        "documents",
+        "feedback",
+    ]
 
     model_config = {"env_prefix": "ALERT_", "env_file": ".env"}
 

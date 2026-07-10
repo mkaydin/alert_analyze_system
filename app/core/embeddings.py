@@ -29,6 +29,15 @@ class OllamaEmbedClient:
     async def embed_one(self, text: str) -> list[float]:
         return (await self.embed([text]))[0]
 
+    def stats(self) -> dict:
+        available = self.semaphore._value
+        waiters = self.semaphore._waiters
+        return {
+            "active": settings.ollama_concurrency - available,
+            "max": settings.ollama_concurrency,
+            "queue": len(waiters) if waiters else 0,
+        }
+
     async def close(self):
         if self._client:
             await self._client.aclose()

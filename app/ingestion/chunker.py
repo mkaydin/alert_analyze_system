@@ -35,6 +35,7 @@ def chunk_alert(alert: Alert) -> list[Chunk]:
             metadata={
                 "alert_id": alert.id,
                 "type": "alert_summary",
+                "title": alert.title,
                 "category": alert.category,
                 "severity": alert.severity,
                 "status": alert.status,

@@ -22,3 +22,15 @@ class SummarizeRequest(BaseModel):
 class AnalyzeRequest(BaseModel):
     alert_id: str
     include_similar: bool = True
+
+
+class AnalyzeInputRequest(BaseModel):
+    content: str
+    content_type: str = "auto"
+
+
+class FeedbackRequest(BaseModel):
+    alert_id: str
+    analysis: str = ""
+    decision: str
+    reason: str = ""

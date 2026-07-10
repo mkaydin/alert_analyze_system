@@ -10,6 +10,7 @@ from app.api.routes.analyze import router as analyze_router
 from app.api.routes.alerts import router as alerts_router
 from app.api.routes.rules import router as rules_router
 from app.api.routes.documents import router as documents_router
+from app.api.routes.feedback import router as feedback_router
 from app.core.chroma_client import chroma
 from app.core.embeddings import embed_client
 from app.core.llm_client import llm_client
@@ -37,3 +38,4 @@ app.include_router(analyze_router)
 app.include_router(alerts_router)
 app.include_router(rules_router)
 app.include_router(documents_router)
+app.include_router(feedback_router)

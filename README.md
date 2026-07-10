@@ -122,6 +122,30 @@ python tests/test_stix_ingestion.py
 #   qwen3-embedding:0.6b: ~117 docs/sec, 1024 dims
 ```
 
+## Desktop GUI (PySide6)
+
+A cross-platform desktop client (Linux/macOS/Windows) for the analyze → review → learn workflow.
+
+```bash
+# Install GUI deps (into the same venv)
+pip install -r gui/requirements-gui.txt
+
+# Make sure the API server is running (see Quick Start), then:
+python -m gui.app
+```
+
+Workflow:
+1. Paste a Defender alert JSON or plain-text description (or **Load JSON file…**), pick a type (`auto`/`json`/`text`), click **Analyze**.
+2. The analysis + summary render in the result pane.
+3. Click **Approve** (recorded) or **Disapprove** → a reason box opens; your reason is sent back, the AI distills a lesson, and it's added to the system's knowledge (`feedback` collection) for future analyses.
+
+Server URL is configurable via **Settings → Set server URL…** or the `ALERT_GUI_BASE_URL` env var (default `http://localhost:8002`).
+
+**Packaging** (per OS):
+```bash
+pyinstaller --onefile --windowed --name alert-analyzer gui/app.py
+```
+
 ## Configuration
 
 All settings in `.env`:
@@ -194,6 +218,26 @@ Response includes the generated answer + source chunks with relevance scores.
 | `POST` | `/api/v1/summarize` | Structured SOC summary of specific alerts |
 | `POST` | `/api/v1/analyze` | Classify alert + compare to similar historical ones |
 | `POST` | `/api/v1/analyze/categorize` | Assign MITRE ATT&CK tactic category |
+
+### Analyze Input & Feedback (GUI workflow)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/v1/analyze-input` | One-shot: accept raw JSON **or** free text, ingest, then analyze + summarize |
+| `POST` | `/api/v1/feedback` | Record analyst approve/disapprove; disapproval reason is distilled by the LLM into a reusable lesson and stored in the `feedback` collection |
+| `GET` | `/api/v1/feedback` | List stored feedback / learned knowledge |
+
+`analyze-input` request:
+```json
+{ "content": "<raw Defender JSON or plain-text description>", "content_type": "auto" }
+```
+`content_type` is `auto` (default), `json`, or `text`. Free text is stored as a synthetic alert so feedback can reference it. Response includes `alert_id`, `input_type`, `title`, `analysis`, `summary`, `similar_alerts`.
+
+`feedback` request:
+```json
+{ "alert_id": "...", "analysis": "<shown analysis>", "decision": "disapprove", "reason": "why it was wrong" }
+```
+On `disapprove`, the LLM synthesizes a correction that is embedded into the `feedback` collection and surfaced by future RAG queries — a closed learning loop.
 
 ### Reference Documents
 

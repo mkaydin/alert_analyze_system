@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from app.core.chroma_client import chroma
 from app.models.rule import DetectionRule

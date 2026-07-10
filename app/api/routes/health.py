@@ -5,6 +5,8 @@ from fastapi import APIRouter
 
 from app.config import settings
 from app.core.chroma_client import chroma
+from app.core.embeddings import embed_client
+from app.core.llm_client import llm_client
 
 router = APIRouter()
 
@@ -43,7 +45,10 @@ async def health():
         "ollama": {
             "reachable": ollama_reachable,
             "models": ollama_models,
-            "concurrency": {"active": 0, "max": settings.ollama_concurrency, "queue": 0},
+            "concurrency": {
+                "embed": embed_client.stats(),
+                "llm": llm_client.stats(),
+            },
         },
         "chromadb": {
             "status": "connected" if chroma_ok else "disconnected",

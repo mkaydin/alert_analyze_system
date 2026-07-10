@@ -1,5 +1,4 @@
 import os
-import re
 import uuid
 
 from app.config import settings
