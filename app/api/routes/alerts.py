@@ -1,7 +1,10 @@
+import logging
+
 from fastapi import APIRouter, HTTPException, Query
 
 from app.core.chroma_client import chroma
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -14,21 +17,26 @@ async def list_alerts(
     offset: int = Query(0, ge=0),
 ):
     col = chroma.get_collection("alerts")
-    where = {}
+    conditions = {}
     if category:
-        where["category"] = category
+        conditions["category"] = category
     if severity:
-        where["severity"] = severity
+        conditions["severity"] = severity
     if status:
-        where["status"] = status
+        conditions["status"] = status
 
-    where_clause = where if where else None
-    try:
-        res = col.get(where=where_clause, limit=limit, offset=offset)
-    except Exception:
-        res = col.get(limit=limit, offset=offset)
+    if len(conditions) == 1:
+        where_clause = conditions
+    elif len(conditions) > 1:
+        where_clause = {"$and": [{k: v} for k, v in conditions.items()]}
+    else:
+        where_clause = None
 
-    total = len(res["ids"]) if res["ids"] else 0
+    count_res = col.get(where=where_clause)
+    total = len(count_res["ids"]) if count_res["ids"] else 0
+
+    res = col.get(where=where_clause, limit=limit, offset=offset)
+
     alerts_list = []
     if res["ids"]:
         for i, doc_id in enumerate(res["ids"]):

@@ -9,8 +9,7 @@ SYSTEM_GUARDRAIL = (
 )
 
 QUERY_PROMPT = """\
-System: You are a SOC analyst assistant. Answer questions about security alerts
-using the provided context. Be precise and cite alert IDs when referencing evidence.
+Be precise and cite alert IDs when referencing evidence.
 If the context doesn't contain enough information, say so.
 
 Context:
@@ -25,8 +24,6 @@ Answer concisely. Include:
 """
 
 SUMMARIZE_PROMPT = """\
-System: Generate a structured SOC report summary for the given alert.
-
 Alert:
 - Title: {title}
 - Category: {category}
@@ -47,8 +44,6 @@ Produce a summary with:
 """
 
 ANALYZE_PROMPT = """\
-System: Classify this alert and compare it against similar historical alerts.
-
 Current Alert:
 {alert_summary}
 
@@ -64,7 +59,7 @@ Provide:
 """
 
 FEEDBACK_PROMPT = """\
-System: You are a SOC knowledge curator. An analyst reviewed an automated alert
+You are a SOC knowledge curator. An analyst reviewed an automated alert
 analysis and DISAPPROVED it. Your job is to distill a concise, reusable lesson
 so future analyses of similar alerts avoid the same mistake.
 
@@ -85,10 +80,6 @@ Return only the knowledge entry text, no preamble.
 """
 
 CATEGORIZE_PROMPT = """\
-System: You are a SOC analyst. Categorize the following security alert into
-the most appropriate MITRE ATT&CK tactic category. Consider the alert title,
-description, and evidence.
-
 Available categories: Initial Access, Execution, Persistence, Privilege Escalation,
 Defense Evasion, Credential Access, Discovery, Lateral Movement, Collection,
 Command and Control, Exfiltration, Impact.

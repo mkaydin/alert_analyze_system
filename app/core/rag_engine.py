@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 import time
 import uuid
@@ -18,6 +19,8 @@ from app.core.prompts import (
 from app.ingestion.ingestor import ingest_alerts
 from app.ingestion.parser import parse_alert_data
 from app.models.alert import Alert, AlertEvidence
+
+logger = logging.getLogger(__name__)
 
 _AGENTIC_LINE = re.compile(
     r"^\s*(let me\b|i'?ll\b|i will\b|first,? let|let's\b|now let)", re.IGNORECASE
@@ -45,8 +48,11 @@ def _sanitize(text: str) -> str:
     return result or text.strip()
 
 
-async def _generate(prompt: str) -> str:
-    return _sanitize(await llm_client.generate(prompt, system_prompt=SYSTEM_GUARDRAIL))
+async def _generate(prompt: str, model: str | None = None) -> str:
+    kwargs = {"system_prompt": SYSTEM_GUARDRAIL}
+    if model:
+        kwargs["model"] = model
+    return _sanitize(await llm_client.generate(prompt, **kwargs))
 
 
 def load_alert_from_store(alert_id: str) -> Alert | None:
@@ -113,8 +119,8 @@ async def query_rag(
             )
             if res["ids"] and res["ids"][0]:
                 results[collection_name] = res
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("ChromaDB query failed on collection '%s': %s", collection_name, exc)
 
     retrieved_chunks = []
     for coll_name, res in results.items():
@@ -142,7 +148,7 @@ async def query_rag(
 
     prompt = QUERY_PROMPT.format(retrieved_chunks=context_text, query=query)
 
-    answer = await _generate(prompt)
+    answer = await _generate(prompt, model=model)
 
     sources = [
         {
@@ -235,8 +241,8 @@ async def analyze_alert(
                         }
                     )
                 similar_context = "\n\n".join(similar_parts)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Similar alert query failed: %s", exc)
 
     prompt = ANALYZE_PROMPT.format(
         alert_summary=alert_summary,

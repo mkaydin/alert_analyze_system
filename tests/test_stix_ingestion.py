@@ -157,7 +157,7 @@ PASS = 0
 FAIL = 0
 
 
-def test(name: str, passed: bool, detail: str = ""):
+def _run_test(name: str, passed: bool, detail: str = ""):
     global PASS, FAIL
     if passed:
         PASS += 1
@@ -297,9 +297,9 @@ def main():
                 sources = result.get("sources", [])
                 has_kw = all(k.lower() in answer.lower() for k in keywords) if keywords else True
                 has_src = len(sources) > 0
-                test(qname, has_kw and has_src, f"keywords: {keywords} | sources: {len(sources)}")
+                _run_test(qname, has_kw and has_src, f"keywords: {keywords} | sources: {len(sources)}")
             except Exception as e:
-                test(qname, False, str(e))
+                _run_test(qname, False, str(e))
 
     # ── Phase 4: Cross-domain ──────────────────────────────────────
     if len(domains) > 1:
@@ -311,9 +311,9 @@ def main():
         for qname, question in cross:
             try:
                 r = query_rag(question)
-                test(qname, len(r.get("answer", "")) > 100, f"answer length: {len(r.get('answer', ''))}")
+                _run_test(qname, len(r.get("answer", "")) > 100, f"answer length: {len(r.get('answer', ''))}")
             except Exception as e:
-                test(qname, False, str(e))
+                _run_test(qname, False, str(e))
 
     # ── Phase 5: Performance ───────────────────────────────────────
     elapsed = time.time() - start_time

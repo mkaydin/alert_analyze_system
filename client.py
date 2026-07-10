@@ -42,12 +42,13 @@ Usage:
 
 import argparse
 import json
+import os
 import sys
 import time
 
 import httpx
 
-BASE_URL = "http://127.0.0.1:8002"
+BASE_URL = os.environ.get("ALERT_GUI_BASE_URL", "http://127.0.0.1:8002")
 
 COLOR_OK = "\033[92m"
 COLOR_WARN = "\033[93m"

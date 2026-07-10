@@ -1,3 +1,4 @@
+import logging
 import time
 
 import httpx
@@ -8,6 +9,7 @@ from app.core.chroma_client import chroma
 from app.core.embeddings import embed_client
 from app.core.llm_client import llm_client
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 _start_time: float = time.time()
@@ -25,8 +27,8 @@ async def health():
                 ollama_reachable = True
                 data = resp.json()
                 ollama_models = [m["name"] for m in data.get("models", [])]
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Ollama health check failed: %s", exc)
 
     chroma_ok = chroma.heartbeat()
     collections = chroma.list_collections()

@@ -13,7 +13,8 @@ async def feedback(req: FeedbackRequest):
         raise HTTPException(
             status_code=422, detail="decision must be 'approve' or 'disapprove'"
         )
-    if req.decision == "disapprove" and not req.reason.strip():
+    reason = (req.reason or "").strip()
+    if req.decision == "disapprove" and not reason:
         raise HTTPException(
             status_code=422, detail="reason is required when disapproving"
         )
@@ -21,7 +22,7 @@ async def feedback(req: FeedbackRequest):
         alert_id=req.alert_id,
         analysis=req.analysis,
         decision=req.decision,
-        reason=req.reason,
+        reason=reason,
     )
 
 
