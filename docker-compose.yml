@@ -1,29 +1,23 @@
-version: '3.8'
-
 services:
-  # Ollama service for LLM and embeddings
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
+  # ChromaDB vector database
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: chromadb
     ports:
-      - "11434:11434"
+      - "8000:8000"
     volumes:
-      - ollama_data:/root/.ollama
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 4G
-        reservations:
-          cpus: '0.5'
-          memory: 1G
-    # Health check for Ollama
+      - chromadb_data:/data
+    environment:
+      - CHROMADB_PATH=/data
+      - CHROMADB_HOST=0.0.0.0
+      - CHROMADB_PORT=8000
+      - ANONYMIZED_TELEMETRY=False
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      test: ["CMD-SHELL", "python -c \"import requests; r=requests.get('http://localhost:8000/api/v1/heartbeat', timeout=5); exit(0 if r.status_code==200 else 1)\""]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+    restart: unless-stopped
 
   # Alert Analysis RAG System FastAPI server
   alert-analyzer-api:
@@ -34,58 +28,65 @@ services:
     ports:
       - "8002:8002"
     environment:
-      - ALERT_OLLAMA_HOST=http://ollama:11434
+      # Server configuration
+      - ALERT_HOST=0.0.0.0
+      - ALERT_PORT=8002
+      - ALERT_RELOAD=false
+      
+      # Ollama configuration (uses local Ollama on host)
+      - ALERT_OLLAMA_HOST=http://host.docker.internal:11434
+      - ALERT_OLLAMA_TIMEOUT=60
+      - ALERT_OLLAMA_CONCURRENCY=4
       - ALERT_EMBED_MODEL=qwen3-embedding:0.6b
       - ALERT_LLM_MODEL=ornith:latest
-      - ALERT_OLLAMA_CONCURRENCY=4
-      - ALERT_OLLAMA_TIMEOUT=60
       - ALERT_LLM_TEMPERATURE=0.1
       - ALERT_LLM_MAX_TOKENS=2048
+      
+      # ChromaDB configuration
       - ALERT_CHROMADB_PATH=/data/chromadb
+      - ALERT_CHROMADB_HOST=chromadb
+      - ALERT_CHROMADB_PORT=8000
+      
+      # Application logging and monitoring
+      - LOG_LEVEL=INFO
+      - PYTHONPATH=/app
+      
+      # Security settings
+      - UVICORN_WORKERS=2
+      - UVICORN_ACCESS_LOG=-
     volumes:
       - chromadb_data:/data
       - ./logs:/app/logs
     depends_on:
-      ollama:
+      chromadb:
         condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 4G
-        reservations:
-          cpus: '0.5'
-          memory: 1G
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8002/api/v1/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+    restart: unless-stopped
 
-  # Alert Analysis RAG System GUI client
-  alert-analyzer-gui:
-    build:
-      context: .
-      dockerfile: Dockerfile.gui
-    container_name: alert-analyzer-gui
+  # Nginx reverse proxy (optional - for SSL termination and routing)
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
     ports:
-      - "8080:8080"
-    environment:
-      - ALERT_GUI_BASE_URL=http://alert-analyzer-api:8002
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - ./logs/nginx:/var/log/nginx
+      - nginx_ssl:/etc/nginx/ssl
     depends_on:
       alert-analyzer-api:
         condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    command: /bin/sh -c "nginx -g 'daemon off;'"
+    restart: unless-stopped
+
+volumes:
+  chromadb_data:
+  nginx_ssl:
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16

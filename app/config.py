@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     ollama_host: str = "http://localhost:11434"
-    embed_model: str = "nomic-embed-text:latest"
+    embed_model: str = "qwen3-embedding:0.6b"
     llm_model: str = "ornith:latest"
     ollama_concurrency: int = 4
     ollama_timeout: int = 60
@@ -20,7 +20,7 @@ class Settings(BaseSettings):
         "feedback",
     ]
 
-    model_config = {"env_prefix": "ALERT_", "env_file": ".env"}
+    model_config = {"env_prefix": "ALERT_", "env_file": ".env", "extra": "allow"}
 
 
 settings = Settings()
